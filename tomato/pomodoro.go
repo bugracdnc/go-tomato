@@ -4,27 +4,22 @@ import (
 	"fmt"
 	"go-tomato/timer"
 	"os"
-	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"golang.org/x/term"
 )
 
-func disableInputBuf() {
-	// Disable input buffering
-	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
-	// Do not display entered characters on the screen
-	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
-}
-
-func enableInputBuf() {
-	// Set terminal back to sane
-	exec.Command("stty", "-F", "/dev/tty", "sane").Run()
-}
+var initialTermState *term.State
 
 func startInputListener(ch chan byte) {
-	//Function to disable input buffering and disable echo
-	disableInputBuf()
+	// Store the initial terminal state
+	if oldState, err := term.MakeRaw(int(os.Stdin.Fd())); err == nil {
+		initialTermState = oldState
+	} else {
+		panic(err)
+	}
 
 	// Catch interrupt signal (^C) to be able to set the terminal back to sane
 	sigs := make(chan os.Signal, 1)
@@ -33,7 +28,7 @@ func startInputListener(ch chan byte) {
 	go func() {
 		sig := <-sigs
 		// Set terminal back to sane
-		enableInputBuf()
+		term.Restore(int(os.Stdin.Fd()), initialTermState)
 
 		// Exit normally if SIGQUIT
 		if sig == syscall.SIGQUIT {
@@ -41,7 +36,7 @@ func startInputListener(ch chan byte) {
 			os.Exit(0)
 		} else { // exit with the signal
 			fmt.Printf("signal: %s\r\n", sig.String())
-			os.Exit(128 + int(sig.(syscall.Signal)))
+			os.Exit(128 + int(sig.(syscall.Signal))) // Exit code: 128 + signal number, per Unix convention
 		}
 	}()
 	go func() {
@@ -78,6 +73,7 @@ func (p *Pomodoro) StartTimer() {
 
 	// Start the input listener
 	startInputListener(ch)
+	defer term.Restore(int(os.Stdin.Fd()), initialTermState)
 
 	//i to count the sessions
 	i := 1
