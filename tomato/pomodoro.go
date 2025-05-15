@@ -52,7 +52,7 @@ func startInputListener(ch chan byte) {
 
 // Prints specific user inputs to interract with the program
 func printInputUsage() {
-	fmt.Printf("(s)kip, (+) add minute, (-) remove minute, (q)uit\r\n")
+	fmt.Printf("(s)kip, (q)uit, (+) add a minute, (-) remove a minute\r\n")
 }
 
 // Line to be put between complete whole sessions
