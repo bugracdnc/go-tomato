@@ -27,7 +27,9 @@ func TimerFor(duration time.Duration, ch chan byte) TimerReturn {
 			switch stdin {
 			case 'q':
 				// Exit by sending an interrupt signal to be detected by the input listener in pomodoro and exit from there
-				syscall.Kill(syscall.Getpid(), syscall.SIGQUIT)
+				if err := syscall.Kill(syscall.Getpid(), syscall.SIGQUIT); err != nil {
+					panic(err)
+				}
 			case 's':
 				// Skip to the next timer by ending the current one
 				fmt.Printf("\r\nSkipping session...\r\n")
