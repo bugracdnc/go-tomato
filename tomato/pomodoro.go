@@ -66,6 +66,15 @@ type Pomodoro struct {
 	start, end                                                          time.Time
 }
 
+// Pause between sessions by listening to the input stream and waiting for a key press
+func printPauseAndWait(ch chan byte) {
+	fmt.Printf("Press any key to start next session...")
+	select {
+	case <-ch:
+	}
+	fmt.Printf("\r\n\n")
+}
+
 // Start the timer initialized in cli/root.go by creating timers for study and breaks with the set values in an endless loop
 func (p *Pomodoro) StartTimer() {
 	// Declare a chan to capture key presses in a goroutine
@@ -85,6 +94,7 @@ func (p *Pomodoro) StartTimer() {
 		timer.TimerFor(time.Duration(p.StudyDuration), ch)
 		// Indicate the end of study session
 		fmt.Printf("\n\rStudy session %s #%d ended!\r\n\n", p.Title, i)
+		printPauseAndWait(ch)
 
 		// Deviate if long breaks are enabled (default)
 		// Check if current session is a long break session (i.e., if it is time for a long break)
@@ -97,6 +107,7 @@ func (p *Pomodoro) StartTimer() {
 			timer.TimerFor(time.Duration(p.LongBreakDuration), ch)
 			// Indicate long break end
 			fmt.Printf("\n\rLong break session %s #%d ended!\r\n\n", p.Title, i/p.LongBreakIntervals)
+			printPauseAndWait(ch)
 
 		} else { // If it is time for a normal break or long breaks are disabled altogether
 
@@ -107,6 +118,7 @@ func (p *Pomodoro) StartTimer() {
 			timer.TimerFor(time.Duration(p.BreakDuration), ch)
 			// Indicate break end
 			fmt.Printf("\n\rBreak session %s #%d ended!\r\n\n", p.Title, i)
+			printPauseAndWait(ch)
 		}
 
 		// Increase the session counter
